@@ -45,7 +45,7 @@ IMPORTANT SAFETY LOCK:
   that decision is yours, not the script's.
 
 Requirements (one time only):
-    pip install pywin32 openpyxl python-dotenv --break-system-packages
+    pip install -r requirements.txt
 
 CONFIGURATION:
     Copy .env.example to .env and fill in your real values (Excel path,
