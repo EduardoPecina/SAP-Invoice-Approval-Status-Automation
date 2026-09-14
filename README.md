@@ -1,71 +1,71 @@
 # SAP Invoice Approval Status Automation
 
-Automatiza la validación diaria del estatus de aprobación de facturas en SAP, actualizando un Excel de seguimiento compartido y armando un borrador de correo de alerta cuando algo necesita atención.
+Automates SAP invoice approval status validation into a shared Excel tracker, with alert-email drafting via Outlook COM automation.
 
-> **Nota:** este es un repositorio de portafolio ya sanitizado. Todos los identificadores específicos de la empresa (rutas, correos, nodo de SAP) fueron reemplazados por variables de entorno o placeholders genéricos — ver `.env.example`. No se incluye ningún dato real de negocio en este repositorio.
+> **Note:** this is a sanitized portfolio copy. All company-specific identifiers (paths, emails, SAP node) have been replaced with environment variables or generic placeholders — see `.env.example`. No real business data is included anywhere in this repository.
 
-## Problema
+## Problem
 
-Un analista revisaba manualmente, documento por documento, si cada factura ya había sido autorizada en SAP, copiando el estatus a mano en un Excel de control y avisando por correo cuando algo se quedaba "atorado" sin resolver.
+An analyst manually checked, document by document, whether each invoice had already been authorized in SAP, copying the status by hand into a control Excel file and flagging by email whenever something stayed "stuck" without being resolved.
 
-Este script automatiza todo el flujo de principio a fin.
+This script automates the entire flow end to end.
 
-## Qué hace
+## What it does
 
-1. Abre el Excel real y lee la tabla `Facturas` (columnas `Comprobante` y `Fecha`).
-2. Por cada comprobante, entra al reporte de aprobaciones en SAP (lista clásica de texto, no ALV Grid) y lee todas las filas de aprobación del documento — puede haber varias, una por cada aprobador en la cadena.
-3. Valida que las filas leídas realmente correspondan al documento solicitado, como protección contra pantallas desincronizadas por popups inesperados.
-4. Calcula un score:
-   - `0` → Rechazado
-   - `1` → Autorizado (estatus definitivo)
-   - `0.5` → En proceso (puede tener aprobaciones intermedias, pero no la autorización final)
-5. Escribe el score en la columna `Status` y los días transcurridos desde la fecha de la factura en `DiasTranscurridos`.
-6. Si hay documentos rechazados, atorados (más de N días en proceso) o no encontrados, arma **un borrador** de correo con prioridad alta — nunca se envía solo, se abre para revisión manual antes de dar clic en Enviar.
-7. Si todo está en orden, no genera ningún correo.
+1. Opens the actual Excel file and reads the `Invoices` table (columns `DocumentNumber` and `Date`).
+2. For each document number, opens the approval report in SAP (a classic text list, not an ALV Grid) and reads all approval rows for that document — there can be several, one per approver in the chain.
+3. Validates that the rows read actually correspond to the requested document, as protection against screens left out of sync by unexpected popups.
+4. Calculates a score:
+   - `0` → Rejected
+   - `1` → Authorized (final status)
+   - `0.5` → In progress (may have intermediate approvals, but not the final authorization)
+5. Writes the score to the `Status` column and the days elapsed since the invoice date into `DaysElapsed`.
+6. If there are rejected, stuck (more than N days in progress), or not-found documents, it builds **one draft email** with high priority — never sent automatically, opened for manual review before clicking Send.
+7. If everything is in order, no email is generated.
 
-## Candado de seguridad
+## Safety lock
 
-El correo se genera siempre como borrador (`mail.Display()`), nunca se envía automáticamente. El cambio a envío automático (`mail.Send()`) es una decisión manual que se toma directamente en el código, una vez que se ha confirmado que el reporte es confiable tras varias corridas.
+The email is always generated as a draft (`mail.Display()`), never sent automatically. Switching to automatic sending (`mail.Send()`) is a manual decision made directly in the code, once the report has proven reliable across several runs.
 
-## Requisitos
+## Requirements
 
-- Windows, con SAP GUI Scripting habilitado
-- Una sesión de SAP ya abierta y logueada (el script no abre una nueva)
-- Outlook instalado (para el borrador de correo)
+- Windows, with SAP GUI Scripting enabled
+- An SAP session already open and logged in (the script does not open a new one)
+- Outlook installed (for the email draft)
 - Python 3.9+
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Configuración
+## Configuration
 
-1. Copia `.env.example` a `.env`.
-2. Llena tus valores reales: ruta del Excel, nombre de columnas, correo destino, nodo de SAP, etc.
-3. El archivo `.env` nunca se sube al repo (está en `.gitignore`).
+1. Copy `.env.example` to `.env`.
+2. Fill in your real values: Excel path, column names, destination email, SAP node, etc.
+3. The `.env` file is never committed to the repo (it's in `.gitignore`).
 
-## Uso
+## Usage
 
-1. Cierra el Excel si lo tienes abierto.
-2. Abre SAP Logon, entra a tu sesión y déjala en la pantalla inicial.
-3. Corre el script:
+1. Close the Excel file if you have it open.
+2. Open SAP Logon, log into your session, and leave it on the initial screen.
+3. Run the script:
 
 ```bash
 python invoice_approval_status_automation.py
 ```
 
-## Estructura
+## Structure
 
 ```
 .
-├── invoice_approval_status_automation.py   # script principal
-├── .env.example                            # plantilla de configuración
+├── invoice_approval_status_automation.py   # main script
+├── .env.example                            # configuration template
 ├── requirements.txt
 └── .gitignore
 ```
 
-## Notas técnicas
+## Technical notes
 
-- La lectura de SAP usa `GuiLabel` en coordenadas fijas de fila/columna (lista clásica), no un grid ALV — por eso el filtrado se hace en la pantalla de selección, antes de ejecutar.
-- El script es idempotente: si un documento ya quedó `Autorizado` en una corrida anterior, no se vuelve a consultar en SAP.
-- Guarda el progreso cada N documentos (configurable) para no perder avance si algo falla a mitad de la corrida.
+- SAP reading uses `GuiLabel` controls at fixed row/column coordinates (classic list), not an ALV grid — that's why filtering happens on the selection screen, before execution.
+- The script is idempotent: if a document was already `Authorized` in a previous run, it's not queried again in SAP.
+- Progress is saved every N documents (configurable) so a mid-run failure doesn't lose all progress.
