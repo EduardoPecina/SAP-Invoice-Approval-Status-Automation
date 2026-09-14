@@ -51,17 +51,18 @@ pip install -r requirements.txt
 3. Run the script:
 
 ```bash
-python invoice_approval_status_automation.py
+python sap_invoice_approval_status_automation.py
 ```
 
 ## Structure
 
 ```
 .
-├── invoice_approval_status_automation.py   # main script
-├── .env.example                            # configuration template
+├── sap_invoice_approval_status_automation.py   # main script
+├── .env.example                                # configuration template
 ├── requirements.txt
-└── .gitignore
+├── .gitignore
+└── LICENSE
 ```
 
 ## Technical notes
